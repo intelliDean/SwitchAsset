@@ -2,18 +2,19 @@ Blockchain Engineer Assessment
 
 
 This assessment is designed to evaluate your blockchain development, integration, and analytical skills. You are expected to submit your code in a public GitHub repository. During the interview, you will be asked to run your application live.
-Part 1 – Smart Contract Development
+
+Part 1 – Smart Contract Development (DONE ✅)
 Develop and deploy an Ethereum-based smart contract (Solidity) that implements a basic asset registry. Each asset should have:
 • Asset ID (unique)
 • Owner address
 • Description
 • Registration timestamp
 
-Requirements: (DONE ✅)
-• Ability to register a new asset
-• Ability to transfer ownership
-• Event emission for both registration and transfer
-• Write at least 5 unit tests using Hardhat/Foundry/Truffle
+Requirements: 
+• Ability to register a new asset ✅
+• Ability to transfer ownership ✅
+• Event emission for both registration and transfer ✅
+• Write at least 5 unit tests using Foundry ✅
 
 
 Part 2 – Backend & API Integration
