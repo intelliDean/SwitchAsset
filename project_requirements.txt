@@ -1,0 +1,66 @@
+Blockchain Engineer Assessment
+
+
+This assessment is designed to evaluate your blockchain development, integration, and analytical skills. You are expected to submit your code in a public GitHub repository. During the interview, you will be asked to run your application live.
+Part 1 – Smart Contract Development
+Develop and deploy an Ethereum-based smart contract (Solidity) that implements a basic asset registry. Each asset should have:
+• Asset ID (unique)
+• Owner address
+• Description
+• Registration timestamp
+
+Requirements:
+• Ability to register a new asset
+• Ability to transfer ownership
+• Event emission for both registration and transfer
+• Write at least 5 unit tests using Hardhat/Foundry/Truffle
+Part 2 – Backend & API Integration
+Build a backend application (Node.js or Python) that can:
+• Connect to the blockchain network (Ethereum testnet preferred)
+• Listen for the events from your smart contract
+• Store event data in a local database (SQLite/PostgreSQL)
+• Provide a REST API endpoint to fetch:
+    – All registered assets
+    – All transfers for a given asset ID
+    – All assets owned by a given address
+
+
+Part 3 – Data Query, Analysis & Visualization
+Task:
+• Query all blockchain events related to your deployed contract for the last 1,000 blocks
+• Store the event data in a local database (SQLite/PostgreSQL)
+• Generate the following analytics:
+    1. Total number of assets ever registered
+    2. Total number of ownership transfers
+    3. Top 3 most active owners (by number of transfers)
+• Export this analysis to both:
+    – A JSON file (analytics.json)
+    – A Markdown summary (summary.md)
+• Create at least one chart (bar chart, pie chart, or line chart) showing activity trends over time using Chart.js, Matplotlib, or Plotly.
+• Bonus: Implement a search API endpoint (Node.js or Python FastAPI/Flask) to query stored event data by:
+    – Asset ID
+    – Owner address
+    – Date range
+Part 4 – Fintech Use Case Design
+Task:
+- Propose a real-world fintech application that leverages blockchain technology.
+- Your proposal should include:
+  1. Problem Statement – What specific financial industry challenge are you solving?
+  2. Proposed Blockchain Solution – How does blockchain address the problem? Which blockchain platform will you use (e.g., Ethereum, Hyperledger, Solana) and why?
+  3. Architecture Overview – High-level diagram showing key components (smart contracts, off-chain services, user interface, APIs, etc.)
+
+Requirements:
+• Efficient database indexing for faster search queries
+• Queries must run without needing blockchain re-scans (use cached database)
+• API must return results in under 1 second for searches on datasets of at least 500 events
+
+
+Submission Instructions
+1. Push your complete codebase to a public GitHub repository.
+2. Include a README.md file with clear setup and run instructions.
+3. During the interview, you will be required to:
+    – Run the application locally
+    – Demonstrate API queries and results
+    – Explain your code design choices
+4. Ensure your code is well-commented and follows best practices.
+

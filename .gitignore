@@ -1,0 +1,14 @@
+node_modules
+out
+lib
+forge-cache
+hh-cache
+hh-artifacts
+.env
+dist
+.idea
+.vscode
+.wake
+cache
+target
+
