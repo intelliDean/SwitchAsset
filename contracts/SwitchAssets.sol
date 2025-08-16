@@ -124,3 +124,7 @@ contract SwitchAssets {
         emit ISwitch.OwnershipTransferred(assetId, oldOwner, newOwner);
     }
 }
+
+
+// SwitchAssets Contract Address: 0xb91f90fc5c8125226486417db014eaa21f7b27a0;
+// https://sepolia.basescan.org/address/0xb91f90fc5c8125226486417db014eaa21f7b27a0#code
