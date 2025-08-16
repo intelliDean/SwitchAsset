@@ -7,256 +7,303 @@ import {ISwitch} from "../contracts/ISwitch.sol";
 import {Errors} from "../contracts/Errors.sol";
 
 contract SwitchAssetsTest is Test {
+    SwitchAssets public switchAssets;
 
-    SwitchAssets switchAssets;
+    address public owner = makeAddr("owner");
+    address public user1 = makeAddr("user1");
+    address public user2 = makeAddr("user2");
 
-    address owner = address(0x123);
-    address user1 = address(0x456);
-    address user2 = address(0x789);
+    address public zeroAddress = address(0);
+
+    event AssetRegistered(bytes32 indexed assetId, address indexed assetOwner);
+    event OwnershipTransferred(
+        bytes32 indexed assetId,
+        address indexed oldOwner,
+        address indexed newOwner
+    );
 
     function setUp() public {
-
         switchAssets = new SwitchAssets();
+    }
 
-        vm.deal(owner, 10 ether);
-        vm.deal(user1, 10 ether);
-        vm.deal(user2, 10 ether);
+    function registerTestAsset(
+        address user,
+        string memory description
+    ) internal returns (bytes32) {
+        vm.prank(user);
+        bytes32 assetId = keccak256(
+            abi.encode(user, block.timestamp, description)
+        );
+        switchAssets.registerAsset(description);
+        return assetId;
     }
 
     function testRegisterAsset() public {
+        string memory description = "testing asset";
 
-        vm.prank(owner);
-
-        vm.expectEmit(true, true, false, true);
-
-        bytes32 expectedId = keccak256(abi.encode(owner, block.timestamp));
-
-        emit ISwitch.AssetRegistered(expectedId, owner);
-
-        switchAssets.registerAsset("This is a test asset");
-
-        ISwitch.Asset memory asset = switchAssets.getAsset(expectedId);
-
-        assertEq(asset.assetId, expectedId, "Asset ID should match");
-        assertEq(asset.assetOwner, owner, "Owner should be correct");
-        assertEq(asset.description, "This is a test asset", "Description should match");
-
-        // assertEq(asset.registeredAt, block.timestamp, "Timestamp should match");
-
-        ISwitch.Asset[] memory myAssets = switchAssets.getMyAssets();
-        assertEq(myAssets.length, 1, "Owner should have one asset");
-        assertEq(
-            myAssets[0].assetId,
-            expectedId,
-            "MyAssets should contain the asset"
+        vm.expectEmit(true, true, false, false);
+        emit AssetRegistered(
+            keccak256(abi.encode(owner, block.timestamp, description)),
+            owner
         );
+
+        bytes32 assetId = registerTestAsset(owner, description);
+
+        ISwitch.Asset memory asset = switchAssets.getAsset(assetId);
+        assertEq(asset.assetOwner, owner);
+        assertEq(asset.description, description);
+        assertEq(asset.registeredAt, block.timestamp);
     }
 
-    function testCannotRegisterAssetZeroAddress() public {
-        vm.prank(address(0));
-        vm.expectRevert(abi.encodeWithSelector(Errors.ADDRESS_ZERO.selector, address(0)));
-        switchAssets.registerAsset("This is a test asset");
+    function testRegisterAssetCaptureEventValues() public {
+        string memory description = "testing asset";
+        address caller = user1;
+
+        vm.warp(1234);
+
+        vm.recordLogs();
+
+        vm.prank(caller);
+        switchAssets.registerAsset(description);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        assertEq(entries.length, 1);
+
+        // topics[0] = event signature
+        assertEq(
+            entries[0].topics[0],
+            keccak256("AssetRegistered(bytes32,address)")
+        );
+
+        // compute expected assetId
+        bytes32 expectedAssetId = keccak256(
+            abi.encode(caller, block.timestamp, description)
+        );
+
+        // topics[1] = indexed assetId
+        assertEq(entries[0].topics[1], expectedAssetId);
+
+        // topics[2] = indexed assetOwner
+        assertEq(entries[0].topics[2], bytes32(uint256(uint160(caller))));
+
+        // data should be empty since both fields are indexed
+        assertEq(entries[0].data.length, 0);
     }
 
+    function testRegisterAssetAddressZeroReverts() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ADDRESS_ZERO.selector, zeroAddress)
+        );
+        vm.prank(zeroAddress);
+        switchAssets.registerAsset("should revert");
+    }
 
-    function testTransferAsset() public {
-        vm.prank(owner);
-        bytes32 id = keccak256(abi.encode(owner, block.timestamp));
-        switchAssets.registerAsset("Test Asset");
+    function testGetAsset() public {
+        string memory description = "testing asset 1";
+        bytes32 assetId = registerTestAsset(user1, description);
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, true, true);
-        emit ISwitch.OwnershipTransferred(id, owner, user1);
+        ISwitch.Asset memory asset = switchAssets.getAsset(assetId);
+        assertEq(asset.assetId, assetId);
+        assertEq(asset.assetOwner, user1);
+    }
 
-        switchAssets.transferAsset(id, user1);
+    function testGetAssetNonExistentReverts() public {
+        bytes32 nonExistentId = keccak256("non-existent");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.ASSET_DOES_NOT_EXIST.selector,
+                nonExistentId
+            )
+        );
+        switchAssets.getAsset(nonExistentId);
+    }
 
-        ISwitch.Asset memory asset = switchAssets.getAsset(id);
-        assertEq(asset.assetOwner, user1, "New owner should be user1");
+    function testGetMyAssetsEmpty() public {
+        vm.prank(user1);
+        ISwitch.Asset[] memory assets = switchAssets.getMyAssets();
+        assertEq(assets.length, 0);
+    }
 
-        vm.prank(owner);
-        ISwitch.Asset[] memory ownerAssets = switchAssets.getMyAssets();
-        assertEq(ownerAssets.length, 0, "Owner should have no assets");
+    function testGetMyAssetsSingle() public {
+        string memory description = "my asset";
+        bytes32 assetId = registerTestAsset(user1, description);
+
+        vm.prank(user1);
+        ISwitch.Asset[] memory assets = switchAssets.getMyAssets();
+
+        assertEq(assets.length, 1);
+        assertEq(assets[0].assetId, assetId);
+        assertEq(assets[0].assetOwner, user1);
+    }
+
+    function testGetMyAssetsMultiple() public {
+        vm.startPrank(user1);
+
+        switchAssets.registerAsset("user1 asset 1");
+        switchAssets.registerAsset("user1 asset 2");
+        switchAssets.registerAsset("user1 asset 3");
+
+        ISwitch.Asset[] memory assets = switchAssets.getMyAssets();
+        vm.stopPrank();
+
+        assertEq(assets.length, 3);
+
+        for (uint i = 0; i < assets.length; i++) {
+            assertEq(assets[i].assetOwner, user1);
+        }
+    }
+
+    function testGetMyAssetsOnlyOwnersAssets() public {
+        bytes32 user1Asset = registerTestAsset(user1, "user1 asset");
+
+        bytes32 user2Asset = registerTestAsset(user2, "user2 asset");
 
         vm.prank(user1);
         ISwitch.Asset[] memory user1Assets = switchAssets.getMyAssets();
-        assertEq(user1Assets.length, 1, "User1 should have one asset");
-        assertEq(
-            user1Assets[0].assetId,
-            id,
-            "User1 should own the transferred asset"
-        );
+        assertEq(user1Assets.length, 1);
+        assertEq(user1Assets[0].assetId, user1Asset);
+
+        vm.prank(user2);
+        ISwitch.Asset[] memory user2Assets = switchAssets.getMyAssets();
+        assertEq(user2Assets.length, 1);
+        assertEq(user2Assets[0].assetId, user2Asset);
     }
 
-    function testCannotTransferNonExistentAsset() public {
-        vm.prank(owner);
-        bytes32 fakeId = bytes32(uint256(999));
-         vm.expectRevert(abi.encodeWithSelector(Errors.ASSET_DOES_NOT_EXIST.selector, fakeId));
-        switchAssets.transferAsset(fakeId, user1);
-    }
+    function testTransferAsset() public {
+        string memory description = "asset to transfer";
+        bytes32 assetId = registerTestAsset(user1, description);
 
-    function testCannotTransferByNonOwner() public {
-        vm.prank(owner);
-        bytes32 id = keccak256(abi.encode(owner, block.timestamp));
-        switchAssets.registerAsset("Test Asset");
+        vm.expectEmit(true, true, true, false);
+        emit OwnershipTransferred(assetId, user1, user2);
 
         vm.prank(user1);
-        vm.expectRevert(abi.encodeWithSelector(Errors.ONLY_OWNER.selector, user1));
-        switchAssets.transferAsset(id, user2);
+        switchAssets.transferAsset(assetId, user2);
+
+        ISwitch.Asset memory asset = switchAssets.getAsset(assetId);
+        assertEq(asset.assetOwner, user2);
     }
 
-    function testCannotTransferToZeroAddress() public {
-        vm.prank(owner);
-        bytes32 id = keccak256(abi.encode(owner, block.timestamp));
-        switchAssets.registerAsset("Test Asset");
+    function testTransferAssetCaptureEventValues() public {
+        address caller = user1;
+        address newOwner = user2;
 
-        vm.prank(owner);
+        vm.warp(1234);
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.ADDRESS_ZERO.selector, address(0)));
-        switchAssets.transferAsset(id, address(0));
+        vm.startPrank(caller);
+        switchAssets.registerAsset("my asset");
+        ISwitch.Asset[] memory myAssets = switchAssets.getMyAssets();
+        bytes32 assetId = myAssets[0].assetId;
+        vm.stopPrank();
+
+        vm.recordLogs();
+
+        vm.prank(caller);
+        switchAssets.transferAsset(assetId, newOwner);
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        assertEq(entries.length, 1);
+
+        assertEq(
+            entries[0].topics[0],
+            keccak256("OwnershipTransferred(bytes32,address,address)")
+        );
+
+        assertEq(entries[0].topics[1], assetId);
+
+        //topics[2] = oldOwner
+        assertEq(entries[0].topics[2], bytes32(uint256(uint160(caller))));
+
+        //topics[3] = newOwner
+        assertEq(entries[0].topics[3], bytes32(uint256(uint160(newOwner))));
+
+        //data should be empty (all params are indexed)
+        assertEq(entries[0].data.length, 0);
     }
 
-    function testCannotTransferToSameOwner() public {
-        vm.prank(owner);
-        bytes32 id = keccak256(abi.encode(owner, block.timestamp));
-        switchAssets.registerAsset("Test Asset");
+    function testTransferAssetNonOwnerReverts() public {
+        bytes32 assetId = registerTestAsset(user1, "testing asset");
 
-        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ONLY_OWNER.selector, user2)
+        );
+        vm.prank(user2);
+        switchAssets.transferAsset(assetId, user2);
+    }
 
-        vm.expectRevert(abi.encodeWithSelector(Errors.INVALID_TRANSACTION.selector, owner));
-        switchAssets.transferAsset(id, owner);
+    function testTransferAssetToSelfReverts() public {
+        bytes32 assetId = registerTestAsset(user1, "testing asset");
+
+        vm.expectRevert(Errors.INVALID_TRANSACTION.selector);
+        vm.prank(user1);
+        switchAssets.transferAsset(assetId, user1);
+    }
+
+    function testTransferAssetNonExistentReverts() public {
+        bytes32 nonExistentId = keccak256("non-existent");
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.ASSET_DOES_NOT_EXIST.selector,
+                nonExistentId
+            )
+        );
+        vm.prank(user1);
+        switchAssets.transferAsset(nonExistentId, user2);
+    }
+
+    function testTransferAssetOnlyOwnerReverts() public {
+        bytes32 assetId = registerTestAsset(user1, "testing asset");
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ONLY_OWNER.selector, user2)
+        );
+        vm.prank(user2);
+        switchAssets.transferAsset(assetId, user2);
+    }
+
+    function testTransferAssetToZeroAddressReverts() public {
+        bytes32 assetId = registerTestAsset(user1, "testing asset");
+
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ADDRESS_ZERO.selector, zeroAddress)
+        );
+        vm.prank(user1);
+        switchAssets.transferAsset(assetId, zeroAddress);
+    }
+
+    function testAssetDescriptionMaxLength() public {
+        string
+            memory longDescription = "i just make this string to be long but i no really get anything wey i want talk so i am just gonna put anythig wey come my mind like Chelsea is wining the EPL, UCL, Carling cup, F.A Cup, Super cup and Community shield this season. i hope this dscrption is long enough?";
+
+        bytes32 assetId = registerTestAsset(user1, longDescription);
+
+        ISwitch.Asset memory asset = switchAssets.getAsset(assetId);
+        assertEq(asset.description, longDescription);
+    }
+
+    function testMultipleUsersMultipleAssets() public {
+        bytes32 user1Asset1 = registerTestAsset(user1, "User1 Asset 1");
+        registerTestAsset(user1, "user1 asset 2");
+        registerTestAsset(user1, "user1 asset 3");
+        registerTestAsset(user1, "user1 asset 4");
+
+        registerTestAsset(user2, "user1 asset 1");
+
+        vm.prank(user1);
+        assertEq(switchAssets.getMyAssets().length, 4);
+
+        vm.prank(user2);
+        assertEq(switchAssets.getMyAssets().length, 1);
+
+        vm.prank(user1);
+        switchAssets.transferAsset(user1Asset1, user2);
+
+        vm.prank(user1);
+        assertEq(switchAssets.getMyAssets().length, 3);
+
+        vm.prank(user2);
+        assertEq(switchAssets.getMyAssets().length, 2);
     }
 }
-
-
-
-// import {IEri} from "../contracts/ISwitch.sol";
-// import {Errors} from "../contracts/Errors.sol";
-// import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-// import {Ownership} from "../contracts/Ownership.sol";
-
-// Mock ISwitch interface
-// interface ISwitch {
-
-//     struct Asset {
-//         bytes32 assetId;
-//         address assetOwner;
-//         string description;
-//         uint256 registeredAt;
-//     }
-
-//     event AssetRegistered(bytes32 indexed assetId, address indexed assetOwner);
-//     event OwnershipTransferred(
-//         bytes32 indexed assetId,
-//         address indexed oldOwner,
-//         address indexed newOwner
-//     );
-// }
-
-// contract Errors {
-//     error ADDRESS_ZERO(address);
-//     error ASSET_ALREADY_EXIST(bytes32);
-//     error ASSET_DOES_NOT_EXIST(bytes32);
-//     error ONLY_OWNER(address);
-//     error INVALID_TRANSACTIO();
-// }
-
-// contract SwitchAssets {
-//     mapping(bytes32 => ISwitch.Asset) private assets;
-//     mapping(address => ISwitch.Asset[]) private myAssets;
-
-//     modifier addressZeroCheck() {
-//         if (msg.sender == address(0)) {
-//             revert Errors.ADDRESS_ZERO(msg.sender);
-//         }
-//         _;
-//     }
-
-//     function registerAsset(string memory description) public addressZeroCheck {
-//         bytes32 id = keccak256(abi.encode(msg.sender, block.timestamp));
-
-//         if (assets[id].assetOwner != address(0)) {
-//             revert Errors.ASSET_ALREADY_EXIST(id);
-//         }
-
-//         ISwitch.Asset storage newAsset = assets[id];
-//         newAsset.assetId = id;
-//         newAsset.assetOwner = msg.sender;
-//         newAsset.description = description;
-//         newAsset.registeredAt = block.timestamp;
-
-//         myAssets[msg.sender].push(newAsset);
-
-//         emit ISwitch.AssetRegistered(id, msg.sender);
-//     }
-
-//     function getAsset(bytes32 id) public view returns (ISwitch.Asset memory) {
-//         if (assets[id].assetOwner == address(0)) {
-//             revert Errors.ASSET_DOES_NOT_EXIST(id);
-//         }
-//         return assets[id];
-//     }
-
-//     function getMyAssets() public view returns (ISwitch.Asset[] memory) {
-//         address caller = msg.sender;
-//         ISwitch.Asset[] memory myItems = myAssets[caller];
-//         uint256 validCount = 0;
-
-//         for (uint256 i = 0; i < myItems.length; i++) {
-//             if (assets[myItems[i].assetId].assetOwner == caller) {
-//                 validCount++;
-//             }
-//         }
-
-//         if (validCount == 0) {
-//             return new ISwitch.Asset[](0);
-//         }
-
-//         ISwitch.Asset[] memory newList = new ISwitch.Asset[](validCount);
-//         for (uint256 i = 0; i < myItems.length; i++) {
-//             if (assets[myItems[i].assetId].assetOwner == caller) {
-//                 newList[validCount - 1] = assets[myItems[i].assetId];
-//                 validCount--;
-//             }
-//         }
-//         return newList;
-//     }
-
-//     function transferAsset(
-//         bytes32 id,
-//         address newOwner
-//     ) public addressZeroCheck {
-//         address caller = msg.sender;
-
-//         if (assets[id].assetOwner != caller) {
-//             revert Errors.ONLY_OWNER(caller);
-//         }
-
-//         if (newOwner == caller) {
-//             revert Errors.INVALID_TRANSACTIO();
-//         }
-
-//         if (assets[id].assetOwner == address(0)) {
-//             revert Errors.ASSET_DOES_NOT_EXIST(id);
-//         }
-
-//         if (newOwner == address(0)) {
-//             revert Errors.ADDRESS_ZERO(newOwner);
-//         }
-
-//         address oldOwner = assets[id].assetOwner;
-//         assets[id].assetOwner = newOwner;
-//         myAssets[newOwner].push(assets[id]);
-
-//         // Remove asset from old owner's myAssets
-//         ISwitch.Asset[] storage oldOwnerAssets = myAssets[oldOwner];
-//         for (uint256 i = 0; i < oldOwnerAssets.length; i++) {
-//             if (oldOwnerAssets[i].assetId == id) {
-//                 oldOwnerAssets[i] = oldOwnerAssets[oldOwnerAssets.length - 1];
-//                 oldOwnerAssets.pop();
-//                 break;
-//             }
-//         }
-
-//         emit ISwitch.OwnershipTransferred(id, oldOwner, newOwner);
-//     }
-// }

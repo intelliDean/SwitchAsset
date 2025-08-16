@@ -7,7 +7,7 @@ import "./ISwitch.sol";
 contract SwitchAssets {
 
     mapping(bytes32 => ISwitch.Asset) private assets;
-    mapping(address => ISwitch.Asset[]) private myAssets;
+    mapping(address => bytes32[]) private myAssets;
 
     modifier addressZeroCheck() {
 
@@ -19,7 +19,9 @@ contract SwitchAssets {
 
     function registerAsset(string memory description) public addressZeroCheck {
 
-        bytes32 id = keccak256(abi.encode(msg.sender, block.timestamp));
+        address caller = msg.sender;
+
+        bytes32 id = keccak256(abi.encode(caller, block.timestamp, description)); // block.prevrandao
 
         if (assets[id].assetOwner != address(0)) {
             revert Errors.ASSET_ALREADY_EXIST(id);
@@ -28,13 +30,13 @@ contract SwitchAssets {
         ISwitch.Asset storage newAsset = assets[id];
 
         newAsset.assetId = id;
-        newAsset.assetOwner = msg.sender;
+        newAsset.assetOwner = caller;
         newAsset.description = description;
         newAsset.registeredAt = block.timestamp;
 
-        myAssets[msg.sender].push(newAsset);
+        myAssets[caller].push(id);
 
-        emit ISwitch.AssetRegistered(id, msg.sender);
+        emit ISwitch.AssetRegistered(id, caller);
     }
 
     function getAsset(bytes32 id) public view returns (ISwitch.Asset memory) {
@@ -50,11 +52,11 @@ contract SwitchAssets {
 
         address caller = msg.sender;
 
-        ISwitch.Asset[] memory myItems = myAssets[caller];
+        bytes32[] memory myItems = myAssets[caller];
 
         uint256 validCount = 0;
         for (uint256 i = 0; i < myItems.length; i++) {
-            if (assets[myItems[i].assetId].assetOwner == caller) {
+            if (assets[myItems[i]].assetOwner == caller) {
                 validCount++;
             }
         }
@@ -67,8 +69,8 @@ contract SwitchAssets {
 
         for (uint256 i = 0; i < myItems.length; i++) {
 
-            if (assets[myItems[i].assetId].assetOwner == caller) {
-                newList[validCount - 1] = assets[myItems[i].assetId];
+            if (assets[myItems[i]].assetOwner == caller) {
+                newList[validCount - 1] = assets[myItems[i]];
                 validCount--;
             }
         }
@@ -76,28 +78,31 @@ contract SwitchAssets {
         return newList;
     }
 
-    function transferAsset(bytes32 id, address newOwner) public addressZeroCheck {
+    function transferAsset(bytes32 assetId, address newOwner) public addressZeroCheck {
 
         address caller = msg.sender;
 
-        if (assets[id].assetOwner != caller) {
+        if (assets[assetId].assetOwner == address(0)) {
+            revert Errors.ASSET_DOES_NOT_EXIST(assetId);
+        }
+
+        if (assets[assetId].assetOwner != caller) {
             revert Errors.ONLY_OWNER(caller);
         }
 
         if (newOwner == caller) {
             revert Errors.INVALID_TRANSACTION();
-        }
-
-        if (assets[id].assetOwner == address(0)) {
-            revert Errors.ASSET_DOES_NOT_EXIST(id);
-        }
+        }        
 
         if (newOwner == address(0)) {
             revert Errors.ADDRESS_ZERO(newOwner);
         }
 
-        address oldOwner = assets[id].assetOwner;
+        address oldOwner = assets[assetId].assetOwner;
 
-        emit ISwitch.OwnershipTransferred(id, oldOwner, newOwner);
+        assets[assetId].assetOwner = newOwner;
+        myAssets[newOwner].push(assetId);
+
+        emit ISwitch.OwnershipTransferred(assetId, oldOwner, newOwner);
     }
 }
