@@ -70,24 +70,24 @@ contract SwitchAssetsTest is Test {
 
         assertEq(entries.length, 1);
 
-        // topics[0] = event signature
+        //topics[0] = event signature
         assertEq(
             entries[0].topics[0],
             keccak256("AssetRegistered(bytes32,address)")
         );
 
-        // compute expected assetId
+        //compute expected assetId
         bytes32 expectedAssetId = keccak256(
             abi.encode(caller, block.timestamp, description)
         );
 
-        // topics[1] = indexed assetId
+        //topics[1] = indexed assetId
         assertEq(entries[0].topics[1], expectedAssetId);
 
-        // topics[2] = indexed assetOwner
+        //topics[2] = indexed assetOwner
         assertEq(entries[0].topics[2], bytes32(uint256(uint160(caller))));
 
-        // data should be empty since both fields are indexed
+        //data should be empty since both fields are indexed
         assertEq(entries[0].data.length, 0);
     }
 
@@ -168,6 +168,43 @@ contract SwitchAssetsTest is Test {
         ISwitch.Asset[] memory user2Assets = switchAssets.getMyAssets();
         assertEq(user2Assets.length, 1);
         assertEq(user2Assets[0].assetId, user2Asset);
+    }
+
+    function testGetAllAssetsEmpty() view public {
+        ISwitch.Asset[] memory assets = switchAssets.getAllAssets();
+        assertEq(assets.length, 0);
+    }
+
+    function testGetAllAssets() public {
+        // deterministic timestamp: i was using this before i added description to the id generation
+        vm.warp(1000);
+
+        vm.prank(user1);
+        switchAssets.registerAsset("User1 Asset");
+
+        // warp so assetId differs
+        vm.warp(2000);
+        vm.prank(user2);
+        switchAssets.registerAsset("User2 Asset");
+
+        ISwitch.Asset[] memory all = switchAssets.getAllAssets();
+
+        assertEq(all.length, 2);
+
+        assertEq(all[0].assetOwner, user1);
+        assertEq(all[0].description, "User1 Asset");
+        assertEq(all[0].registeredAt, 1000);
+
+        assertEq(all[1].assetOwner, user2);
+        assertEq(all[1].description, "User2 Asset");
+        assertEq(all[1].registeredAt, 2000);
+
+        // sanity check: assetIds match keccak(caller, timestamp, descr)
+        bytes32 expectedId1 = keccak256(abi.encode(user1, uint256(1000), "User1 Asset"));
+        bytes32 expectedId2 = keccak256(abi.encode(user2, uint256(2000), "User2 Asset"));
+
+        assertEq(all[0].assetId, expectedId1);
+        assertEq(all[1].assetId, expectedId2);
     }
 
     function testTransferAsset() public {

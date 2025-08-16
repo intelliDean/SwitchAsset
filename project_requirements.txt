@@ -9,11 +9,13 @@ Develop and deploy an Ethereum-based smart contract (Solidity) that implements a
 • Description
 • Registration timestamp
 
-Requirements:
+Requirements: (DONE ✅)
 • Ability to register a new asset
 • Ability to transfer ownership
 • Event emission for both registration and transfer
 • Write at least 5 unit tests using Hardhat/Foundry/Truffle
+
+
 Part 2 – Backend & API Integration
 Build a backend application (Node.js or Python) that can:
 • Connect to the blockchain network (Ethereum testnet preferred)

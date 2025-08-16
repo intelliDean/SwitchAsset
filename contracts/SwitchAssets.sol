@@ -6,8 +6,11 @@ import "./ISwitch.sol";
 
 contract SwitchAssets {
 
+    bytes32[] private allAssets;
+
     mapping(bytes32 => ISwitch.Asset) private assets;
     mapping(address => bytes32[]) private myAssets;
+    
 
     modifier addressZeroCheck() {
 
@@ -27,14 +30,15 @@ contract SwitchAssets {
             revert Errors.ASSET_ALREADY_EXIST(id);
         }
 
-        ISwitch.Asset storage newAsset = assets[id];
+        ISwitch.Asset storage newAsset = assets[id]; //asset to storage
 
         newAsset.assetId = id;
         newAsset.assetOwner = caller;
         newAsset.description = description;
         newAsset.registeredAt = block.timestamp;
 
-        myAssets[caller].push(id);
+        myAssets[caller].push(id); //individual assets
+        allAssets.push(id); //all assets
 
         emit ISwitch.AssetRegistered(id, caller);
     }
@@ -45,6 +49,20 @@ contract SwitchAssets {
         }
 
         return assets[id];
+    }
+    function getAllAssets() public view returns (ISwitch.Asset[] memory) {
+
+        if (allAssets.length == 0) {
+            return new ISwitch.Asset[](0);
+        }
+        
+        ISwitch.Asset[] memory assetList = new ISwitch.Asset[](allAssets.length);
+
+        for (uint256 i = 0; i < allAssets.length; i++) {
+            assetList[i] = assets[allAssets[i]];
+        }
+
+        return assetList;
     }
 
 
