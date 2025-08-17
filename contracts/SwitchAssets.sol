@@ -6,7 +6,11 @@ import "./ISwitch.sol";
 
 contract SwitchAssets {
 
-    bytes32[] private allAssets;
+    //if i do this, it will reduce storage load but increases computation during get all assets
+//    bytes32[] private allAssets;
+
+    //if i do this, it increases the storage load but reduces computation load during get all assets
+    ISwitch.Asset[] private allAssets;
 
     mapping(bytes32 => ISwitch.Asset) private assets;
     mapping(address => bytes32[]) private myAssets;
@@ -38,7 +42,7 @@ contract SwitchAssets {
         newAsset.registeredAt = block.timestamp;
 
         myAssets[caller].push(id); //individual assets
-        allAssets.push(id); //all assets
+        allAssets.push(newAsset); //all assets
 
         emit ISwitch.AssetRegistered(id, caller);
     }
@@ -52,17 +56,19 @@ contract SwitchAssets {
     }
     function getAllAssets() public view returns (ISwitch.Asset[] memory) {
 
-        if (allAssets.length == 0) {
-            return new ISwitch.Asset[](0);
-        }
-        
-        ISwitch.Asset[] memory assetList = new ISwitch.Asset[](allAssets.length);
+//        if (allAssets.length == 0) {
+//            return new ISwitch.Asset[](0);
+//        }
+//
+//        ISwitch.Asset[] memory assetList = new ISwitch.Asset[](allAssets.length);
+//
+//        for (uint256 i = 0; i < allAssets.length; i++) {
+//            assetList[i] = assets[allAssets[i]];
+//        }
 
-        for (uint256 i = 0; i < allAssets.length; i++) {
-            assetList[i] = assets[allAssets[i]];
-        }
+        // return assetList
 
-        return assetList;
+        return allAssets;
     }
 
 
