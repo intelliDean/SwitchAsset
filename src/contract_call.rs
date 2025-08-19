@@ -31,65 +31,8 @@ pub async fn register_asset(
     State(state): State<AppState>,
     Json(input): Json<RegisterAssetInput>,
 ) -> Result<Json<String>, StatusCode> {
-    // let contract = state.contract.clone();
-    //
-    // // Estimate gas for the transaction
-    // let gas_estimate = contract
-    //     .register_asset(input.description.clone())
-    //     .estimate_gas()
-    //     .await
-    //     .map_err(|e| {
-    //         eprintln!("Gas estimation error: {:?}", e.to_string());
-    //         StatusCode::INTERNAL_SERVER_ERROR
-    //     })?;
-    //
-    // // Set a gas limit with a buffer (e.g., 20% more than estimated)
-    // let gas_limit = gas_estimate * 120 / 100;
-    // eprintln!(
-    //     "Estimated gas: {}, Set gas limit: {}",
-    //     gas_estimate, gas_limit
-    // );
-    //
-    // eprintln!("Input: {:?}", input.description.clone());
-    //
-    // let call = contract
-    //     .register_asset(input.description.clone())
-    //     .gas(gas_limit)
-    //     .gas_price(gas_price)
-    //     .value(U256::zero());
-    // let tx = call
-    //     .send()
-    //     .await
-    //     .map_err(|e| {
-    //         eprintln!("Transaction send error: {:?}", e);
-    //         StatusCode::INTERNAL_SERVER_ERROR
-    //     })?
-    //     .await
-    //     .map_err(|e| {
-    //         eprintln!("Transaction confirmation error: {:?}", e);
-    //         StatusCode::INTERNAL_SERVER_ERROR
-    //     })?
-    //     .ok_or_else(|| {
-    //         eprintln!("No transaction receipt");
-    //         StatusCode::INTERNAL_SERVER_ERROR
-    //     })?;
-    //
-    // eprintln!("Transaction: {:?}", tx);
-    //
-    // if tx.status != Some(1.into()) {
-    //     eprintln!("Transaction failed: {:?}", tx);
-    //     return Err(StatusCode::BAD_REQUEST);
-    // }
-    //
-    // if tx.status != Some(1.into()) {
-    //     eprintln!("Transaction failed: {:?}", tx);
-    //     return Err(StatusCode::BAD_REQUEST);
-    // }
 
     let contract = state.contract.clone();
-
-    // Log input for debugging
-    eprintln!("Registering asset with description: {}", input.description);
 
     // Check wallet balance
     let wallet_address = contract.client().address();
@@ -113,6 +56,7 @@ pub async fn register_asset(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
     let gas_limit = gas_estimate * 120 / 100; // 120% buffer
+
     eprintln!("Estimated gas: {}, Set gas limit: {}", gas_estimate, gas_limit);
 
     // Set gas price (fallback to 2 Gwei if network fetch fails)
@@ -121,11 +65,13 @@ pub async fn register_asset(
         .get_gas_price()
         .await
         .unwrap_or(U256::from(2_000_000_000u64));
+
     eprintln!("Gas price: {} wei ({} Gwei)", gas_price, gas_price.as_u64() as f64 / 1e9);
 
     // Calculate required funds
     let required_funds: U256 = gas_limit * gas_price;
     eprintln!("Required funds: {} wei (~{} ETH)", required_funds, required_funds.as_u128() as f64 / 1e18);
+
     if balance < required_funds {
         eprintln!(
             "Insufficient funds: have {} wei, need {} wei",
@@ -137,7 +83,7 @@ pub async fn register_asset(
     // Send transaction
     let call = contract
         .register_asset(input.description.clone())
-        .gas(gas_limit)
+        .gas(gas_limit) //
         .gas_price(gas_price)
         .value(U256::zero());
     let tx = call
@@ -348,6 +294,7 @@ pub async fn get_my_assets(
 
     Ok(Json(db_assets))
 }
+
 
 #[utoipa::path(
     post,

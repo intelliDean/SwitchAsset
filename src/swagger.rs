@@ -1,10 +1,11 @@
 use crate::contract_calls::{
-    __path_get_all_contract_assets, __path_get_asset,
-    __path_get_my_assets, __path_register_asset, __path_transfer_asset,
+    get_all_contract_assets::__path_get_all_contract_assets, get_asset::__path_get_asset,
+    get_my_assets::__path_get_my_assets, register_asset::__path_register_asset,
+    transfer_asset::__path_transfer_asset,
 };
 use crate::contract_calls::{
-    get_all_contract_assets, get_asset, get_my_assets, register_asset,
-    transfer_asset,
+    get_all_contract_assets::get_all_contract_assets, get_asset::get_asset,
+    get_my_assets::get_my_assets, register_asset::register_asset, transfer_asset,
 };
 use crate::handlers::assets::__path_get_all_assets;
 use crate::handlers::transfer::{__path_get_assets_by_owner, __path_get_transfers_by_asset};

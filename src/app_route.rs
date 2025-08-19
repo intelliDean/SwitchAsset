@@ -17,7 +17,11 @@ use std::sync::Arc;
 use std::time::Duration;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use crate::contract_calls::{get_asset, get_my_assets, register_asset, transfer_asset, get_all_contract_assets};
+use crate::contract_calls::{
+    get_all_contract_assets::get_all_contract_assets, get_asset::get_asset,
+    get_my_assets::get_my_assets, register_asset::register_asset, transfer_asset,
+};
+use crate::contract_calls::transfer_asset::transfer_asset;
 
 //abi path
 abigen!(
