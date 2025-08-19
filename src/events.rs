@@ -134,7 +134,6 @@
 //     }
 // }
 
-
 use crate::app_route::{AssetRegisteredFilter, OwnershipTransferredFilter};
 use crate::app_route::{SwitchAssets, SwitchAssetsEvents};
 use crate::app_state::AppState;
@@ -142,11 +141,11 @@ use crate::handlers::analytics::generate_analytics;
 use crate::schema::{assets, transfers};
 use chrono::Utc;
 use diesel::prelude::*;
+use ecdsa::SigningKey;
+use ethers::core::k256::Secp256k1;
 use ethers::{core::utils::to_checksum, prelude::*};
 use eyre::Result;
 use std::sync::Arc;
-use ecdsa::SigningKey;
-use ethers::core::k256::Secp256k1;
 
 pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
     let contract = state.contract.clone();
@@ -183,13 +182,20 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
 
         // Query historical events
         let asset_registered_logs = asset_registered_filter.query().await.map_err(|e| {
-            eprintln!("Failed to query AssetRegistered events for blocks {} to {}: {:?}", current_block, to_block, e);
+            eprintln!(
+                "Failed to query AssetRegistered events for blocks {} to {}: {:?}",
+                current_block, to_block, e
+            );
             eyre::eyre!("Failed to query AssetRegistered events: {}", e)
         })?;
-        let ownership_transferred_logs = ownership_transferred_filter.query().await.map_err(|e| {
-            eprintln!("Failed to query OwnershipTransferred events for blocks {} to {}: {:?}", current_block, to_block, e);
-            eyre::eyre!("Failed to query OwnershipTransferred events: {}", e)
-        })?;
+        let ownership_transferred_logs =
+            ownership_transferred_filter.query().await.map_err(|e| {
+                eprintln!(
+                    "Failed to query OwnershipTransferred events for blocks {} to {}: {:?}",
+                    current_block, to_block, e
+                );
+                eyre::eyre!("Failed to query OwnershipTransferred events: {}", e)
+            })?;
 
         // Process historical events
         let conn = &mut state.db_pool.get().map_err(|e| {
@@ -205,7 +211,10 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
         for log in ownership_transferred_logs {
             process_ownership_transferred_event(&log, conn)?;
             if let Err(e) = generate_analytics(&state).await {
-                eprintln!("Analytics generation error for OwnershipTransferred: {:?}", e);
+                eprintln!(
+                    "Analytics generation error for OwnershipTransferred: {:?}",
+                    e
+                );
             }
         }
 
@@ -239,7 +248,10 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
                 })?;
                 process_ownership_transferred_event(&event, conn)?;
                 if let Err(e) = generate_analytics(&state).await {
-                    eprintln!("Analytics generation error for OwnershipTransferred: {:?}", e);
+                    eprintln!(
+                        "Analytics generation error for OwnershipTransferred: {:?}",
+                        e
+                    );
                 }
             }
             Some(Err(e)) => {
@@ -304,7 +316,10 @@ async fn process_asset_registered_event(
     Ok(())
 }
 
-fn process_ownership_transferred_event(event: &OwnershipTransferredFilter, conn: &mut PgConnection) -> Result<()> {
+fn process_ownership_transferred_event(
+    event: &OwnershipTransferredFilter,
+    conn: &mut PgConnection,
+) -> Result<()> {
     let asset_id = format!("0x{}", hex::encode(event.asset_id));
     let old_owner = to_checksum(&event.old_owner, None);
     let new_owner = to_checksum(&event.new_owner, None);
@@ -338,10 +353,10 @@ fn process_ownership_transferred_event(event: &OwnershipTransferredFilter, conn:
 
         Ok::<(), eyre::Report>(())
     })
-        .map_err(|e| {
-            eprintln!("Transaction failed for asset {}: {:?}", asset_id, e);
-            eyre::eyre!("Transaction failed: {}", e)
-        })?;
+    .map_err(|e| {
+        eprintln!("Transaction failed for asset {}: {:?}", asset_id, e);
+        eyre::eyre!("Transaction failed: {}", e)
+    })?;
 
     eprintln!(
         "🔄 Ownership Transferred: Asset ID = {}, Old Owner = {}, New Owner = {}",
@@ -349,3 +364,19 @@ fn process_ownership_transferred_event(event: &OwnershipTransferredFilter, conn:
     );
     Ok(())
 }
+
+// Part 3 – Data Query, Analysis & Visualization (DONE)
+// • Query all blockchain events related to your deployed contract for the last 1,000 blocks
+// • Store the event data in a local database (SQLite/PostgreSQL)
+// • Generate the following analytics:
+// 1. Total number of assets ever registered
+// 2. Total number of ownership transfers
+// 3. Top 3 most active owners (by number of transfers)
+// • Export this analysis to both:
+// – A JSON file (analytics.json)
+// – A Markdown summary (summary.md)
+// • Create at least one chart (bar chart, pie chart, or line chart) showing activity trends over time using Chart.js, Matplotlib, or Plotly.
+// • Bonus: Implement a search API endpoint (Node.js or Python FastAPI/Flask) to query stored event data by:
+// – Asset ID
+// – Owner address
+// – Date range

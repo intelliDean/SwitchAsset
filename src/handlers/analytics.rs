@@ -88,3 +88,5 @@ pub async fn generate_analytics(state: &AppState) -> Result<()> {
 
     Ok(())
 }
+
+

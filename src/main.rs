@@ -56,7 +56,7 @@ async fn main() -> Result<()> {
 }
 
 
-// Part 2 – Backend & API Integration
+// Part 2 – Backend & API Integration (DONE)
 // Build a backend application (Node.js or Python) that can:
 // • Connect to the blockchain network (Ethereum testnet preferred)
 // • Listen for the events from your smart contract
