@@ -22,6 +22,7 @@ dependencies = [
  "diesel",
  "dotenv",
  "dotenvy",
+ "ecdsa",
  "ethabi",
  "ethers",
  "eyre",

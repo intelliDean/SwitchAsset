@@ -46,6 +46,7 @@ contract SwitchAssets {
 
         emit ISwitch.AssetRegistered(id, caller);
     }
+    
 
     function getAsset(bytes32 id) public view returns (ISwitch.Asset memory) {
         if (assets[id].assetOwner == address(0)) {

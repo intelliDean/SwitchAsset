@@ -7,5 +7,7 @@ pub fn create_routes(state: AppState) -> Router {
         .route("/assets", get(get_all_assets))
         .route("/transfers/:asset_id", get(get_transfers_by_asset))
         .route("/assets/owner/:address", get(get_assets_by_owner))
+        .route("/contract/get_asset", get(get_asset))
         .with_state(state)
 }
+

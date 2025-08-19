@@ -7,6 +7,8 @@ mod models;
 mod schema;
 mod swagger;
 mod app_route;
+// mod contract_call;
+mod contract_calls;
 // mod contract_calls;
 
 use crate::events::listen_for_events;
@@ -29,7 +31,7 @@ use utoipa::OpenApi;
 #[tokio::main]
 async fn main() -> Result<()> {
 
-    let state = state_init()?;
+    let state = state_init().await?;
 
     // tokio::spawn(listen_for_events(state.clone()));
 
