@@ -1,33 +1,33 @@
+mod app_route;
 mod app_state;
+mod contract_calls;
 mod events;
 mod handlers;
 mod models;
 mod schema;
 mod swagger;
-mod app_route;
-mod contract_calls;
 
 use crate::events::listen_for_events;
 
-use crate::app_route::{app_router, state_init};
+use crate::app_route::{app_router};
 use diesel::prelude::*;
 use diesel::prelude::*;
 use ethers::{
     // Added import for to_checksum
-    prelude::*
-
-    ,
+    prelude::*,
 };
 use eyre::Result;
 use serde::Serialize;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
+use crate::app_state::AppState;
+use crate::handlers::analytics::{generate_analytics};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-
-    let state = state_init().await?;
+    let state = Arc::from(AppState::init().await?);
 
     // spawn event listener in background
     let state_clone = state.clone();
@@ -36,6 +36,11 @@ async fn main() -> Result<()> {
             eprintln!("Error in event listener: {:?}", e);
         }
     });
+
+    // 2 factor auth
+    if let Err(e) = generate_analytics(&state).await {
+        eprintln!("Analytics generation error: {:?}", e);
+    }
 
     let app = app_router(state);
 

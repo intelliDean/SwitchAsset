@@ -1,5 +1,6 @@
 // use crate::state::AppState;
 
+use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::models::{ApiResponse, Asset as DbAsset, GetAssetInput};
 use axum::{Json, extract::State, http::StatusCode};
@@ -20,7 +21,7 @@ use utoipa::ToSchema;
     tag = "SwitchAssets"
 )]
 pub async fn get_asset(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     Json(input): Json<GetAssetInput>,
 ) -> eyre::Result<Json<ApiResponse<crate::models::Asset>>, StatusCode> {
     let asset_id_bytes = hex::decode(input.asset_id.strip_prefix("0x").unwrap_or(&input.asset_id))

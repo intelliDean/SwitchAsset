@@ -1,3 +1,4 @@
+use std::sync::Arc;
 // use crate::state::AppState;
 use crate::app_route::{AssetRegisteredFilter};
 use crate::app_state::AppState;
@@ -25,7 +26,7 @@ use utoipa::ToSchema;
     tag = "SwitchAssets"
 )]
 pub async fn register_asset(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     Json(input): Json<RegisterAssetInput>,
 ) -> Result<Json<String>, StatusCode> {
 

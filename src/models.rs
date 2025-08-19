@@ -1,11 +1,11 @@
+use crate::app_state::AppState;
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
 use diesel::{AsChangeset, Insertable, Queryable};
 use ethabi::ethereum_types::{H160, H256};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use crate::app_state::AppState;
 
 #[derive(Queryable, Insertable, AsChangeset, Serialize, ToSchema)]
 #[diesel(table_name = crate::schema::assets)]
@@ -26,7 +26,6 @@ pub struct Transfer {
     pub timestamp: i64,
 }
 
-
 #[derive(Serialize, ToSchema)]
 pub struct ApiResponse<T> {
     pub data: T,
@@ -37,14 +36,11 @@ pub struct RegisterAssetInput {
     pub description: String,
 }
 
-
-
 #[derive(Deserialize, ToSchema)]
 pub struct TransferAssetInput {
     pub asset_id: String,
     pub new_owner: String,
 }
-
 
 #[derive(Serialize, ToSchema)]
 pub struct OwnershipTransferredResponse {
@@ -92,12 +88,44 @@ impl AssetRegisteredResponse {
     }
 
     pub fn new(asset_id: H256, asset_owner: H160) -> Self {
-        Self { asset_id, asset_owner }
+        Self {
+            asset_id,
+            asset_owner,
+        }
     }
 }
 
 
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
+pub struct SearchInput {
+    pub asset_id: Option<String>,
+    pub owner_address: Option<String>,
+    pub start_date: Option<i64>,
+    pub end_date: Option<i64>,
+}
 
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct TransferByDate {
+    pub date: i64,
+    pub count: i64,
+}
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct TopOwner {
+    pub owner: String,
+    pub transfer_count: i64,
+}
 
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct Analytics {
+    pub total_assets: i64,
+    pub total_transfers: i64,
+    pub top_owners: Vec<TopOwner>,
+}
 
+// #[derive(Serialize, Deserialize, Debug, ToSchema)]
+// pub struct Analytics {
+//     pub total_assets: i64,
+//     pub total_transfers: i64,
+//     pub top_owners: Vec<(String, i64)>,
+// }

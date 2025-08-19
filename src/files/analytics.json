@@ -1,0 +1,18 @@
+{
+  "top_owners": [
+    {
+      "owner": "0xc6fb3fe7c22220862a1b403e5fece8f13bcb61ce",
+      "transfer_count": 3
+    },
+    {
+      "owner": "0x_new_owner",
+      "transfer_count": 1
+    },
+    {
+      "owner": "0xf2e7e2f51d7c9eea9b0313c2eca12f8e43bd1855",
+      "transfer_count": 1
+    }
+  ],
+  "total_assets": 7,
+  "total_transfers": 5
+}

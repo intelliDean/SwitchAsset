@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::models::{
     ApiResponse, Asset as DbAsset
@@ -17,7 +18,7 @@ use axum::Json;
 )]
 
 pub async fn get_my_assets(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
 ) -> eyre::Result<Json<Vec<crate::models::Asset>>, StatusCode> {
     let contract = state.contract.clone();
     let assets_tuple = contract.get_my_assets().call().await.map_err(|e| {

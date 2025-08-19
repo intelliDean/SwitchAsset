@@ -1,4 +1,6 @@
+use std::sync::Arc;
 use crate::app_route::OwnershipTransferredFilter;
+use crate::app_route::{AssetRegisteredFilter};
 use crate::app_state::AppState;
 use crate::models::{OwnershipTransferredResponse, TransferAssetInput};
 use crate::schema::{assets, transfers};
@@ -25,7 +27,7 @@ use ethers::prelude::*;
 )]
 // Call transferAsset and save OwnershipTransferred event to DB
 pub async fn transfer_asset(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
     Json(input): Json<TransferAssetInput>,
 ) -> eyre::Result<Json<OwnershipTransferredResponse>, StatusCode> {
     let asset_id_bytes = hex::decode(input.asset_id.strip_prefix("0x").unwrap_or(&input.asset_id))

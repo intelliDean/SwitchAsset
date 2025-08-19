@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
@@ -18,7 +19,7 @@ use crate::models:: Asset as DbAsset;
 )]
 
 pub async fn get_all_contract_assets(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
 ) -> eyre::Result<Json<Vec<crate::models::Asset>>, StatusCode> {
     let contract = state.contract.clone();
     let assets_tuple = contract.get_all_assets().call().await.map_err(|e| {

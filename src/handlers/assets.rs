@@ -1,7 +1,12 @@
-use axum::{extract::State, Json};
+use crate::{
+    app_state::AppState,
+    models::{ApiResponse, Asset},
+    schema::assets,
+};
 use axum::http::StatusCode;
-use crate::{app_state::AppState, models::{Asset, ApiResponse}, schema::assets};
+use axum::{Json, extract::State};
 use diesel::prelude::*;
+use std::sync::Arc;
 use utoipa::path;
 
 #[utoipa::path(
@@ -14,15 +19,18 @@ use utoipa::path;
     tag = "SwitchAssets"
 )]
 pub async fn get_all_assets(
-    State(state): State<AppState>,
+    State(state): State<Arc<AppState>>,
 ) -> eyre::Result<Json<ApiResponse<Vec<Asset>>>, StatusCode> {
     use self::assets::dsl::*;
-    let conn = &mut state
-        .db_pool
-        .get()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let results = assets
-        .load::<Asset>(conn)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let conn = &mut state.db_pool.get().map_err(|e| {
+        eprintln!("DB connection error: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let results = assets.load::<Asset>(conn).map_err(|e| {
+        eprintln!("Assets query error: {:?}", e);
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
     Ok(Json(ApiResponse { data: results }))
 }
