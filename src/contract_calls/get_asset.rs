@@ -1,10 +1,10 @@
-use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::models::{ApiResponse, Asset as DbAsset, GetAssetInput};
 use axum::{Json, extract::State, http::StatusCode};
 use diesel::prelude::*;
 use ethabi::ethereum_types::H256;
 use ethers::prelude::*;
+use std::sync::Arc;
 use utoipa::ToSchema;
 
 #[utoipa::path(

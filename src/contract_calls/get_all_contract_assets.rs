@@ -1,12 +1,12 @@
-use std::sync::Arc;
-use axum::extract::State;
-use axum::http::StatusCode;
-use axum::Json;
-use diesel::RunQueryDsl;
 use crate::app_state::AppState;
 use crate::models::ApiResponse;
+use crate::models::Asset as DbAsset;
 use crate::schema::assets;
-use crate::models:: Asset as DbAsset;
+use axum::Json;
+use axum::extract::State;
+use axum::http::StatusCode;
+use diesel::RunQueryDsl;
+use std::sync::Arc;
 
 #[utoipa::path(
     get,

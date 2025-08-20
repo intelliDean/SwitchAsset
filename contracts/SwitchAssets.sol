@@ -13,8 +13,9 @@ contract SwitchAssets {
     ISwitch.Asset[] private allAssets;
 
     mapping(bytes32 => ISwitch.Asset) private assets;
+
     mapping(address => bytes32[]) private myAssets;
-    
+
 
     modifier addressZeroCheck() {
 
@@ -46,7 +47,7 @@ contract SwitchAssets {
 
         emit ISwitch.AssetRegistered(id, caller);
     }
-    
+
 
     function getAsset(bytes32 id) public view returns (ISwitch.Asset memory) {
         if (assets[id].assetOwner == address(0)) {
@@ -55,6 +56,7 @@ contract SwitchAssets {
 
         return assets[id];
     }
+
     function getAllAssets() public view returns (ISwitch.Asset[] memory) {
 
 //        if (allAssets.length == 0) {
@@ -117,7 +119,7 @@ contract SwitchAssets {
 
         if (newOwner == caller) {
             revert Errors.INVALID_TRANSACTION();
-        }        
+        }
 
         if (newOwner == address(0)) {
             revert Errors.ADDRESS_ZERO(newOwner);
@@ -145,7 +147,6 @@ contract SwitchAssets {
 //  • Ability to transfer ownership ✅
 //  • Event emission for both registration and transfer ✅
 //  • Write at least 5 unit tests using Foundry ✅
-
 
 // SwitchAssets Contract Address: 0x3897196da6a4f2219ED4F183AFA3A10C8C227f23;
 // https://sepolia.basescan.org/address/0x3897196da6a4f2219ED4F183AFA3A10C8C227f23#code

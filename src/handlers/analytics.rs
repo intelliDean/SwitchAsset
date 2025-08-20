@@ -1,6 +1,6 @@
+use crate::app_state::AppState;
 use crate::models::{Analytics, TopOwner};
 use crate::schema::{assets, transfers};
-use crate::app_state::AppState;
 use axum::Json;
 use diesel::prelude::*;
 use diesel::prelude::*;
@@ -32,14 +32,13 @@ pub async fn get_analytics() -> Result<Json<Analytics>, axum::http::StatusCode> 
     Ok(Json(analytics))
 }
 
-
 pub async fn generate_analytics(state: &AppState) -> Result<()> {
     let conn = &mut state.db_pool.get()?;
-    
+
     let total_assets: i64 = assets::table.count().get_result(conn)?;
-    
+
     let total_transfers: i64 = transfers::table.count().get_result(conn)?;
-    
+
     //this is to get the top 3 owners
     let top_owners = transfers::table
         .select((
@@ -47,11 +46,16 @@ pub async fn generate_analytics(state: &AppState) -> Result<()> {
             diesel::dsl::sql::<diesel::sql_types::BigInt>("count(*) as transfer_count"),
         ))
         .group_by(transfers::new_owner)
-        .order(diesel::dsl::sql::<diesel::sql_types::BigInt>("count(*) DESC"))
+        .order(diesel::dsl::sql::<diesel::sql_types::BigInt>(
+            "count(*) DESC",
+        ))
         .limit(3)
         .load::<(String, i64)>(conn)?
         .into_iter()
-        .map(|(owner, transfer_count)| TopOwner { owner, transfer_count })
+        .map(|(owner, transfer_count)| TopOwner {
+            owner,
+            transfer_count,
+        })
         .collect::<Vec<_>>();
 
     // to create analytics struct
@@ -80,11 +84,13 @@ pub async fn generate_analytics(state: &AppState) -> Result<()> {
     writeln!(md_file, "{}", analytics.total_transfers)?;
     writeln!(md_file, "## Top 3 Most Active Owners")?;
     for owner in &analytics.top_owners {
-        writeln!(md_file, "- {}: {} transfers", owner.owner, owner.transfer_count)?;
+        writeln!(
+            md_file,
+            "- {}: {} transfers",
+            owner.owner, owner.transfer_count
+        )?;
     }
     md_file.flush()?;
 
     Ok(())
 }
-
-

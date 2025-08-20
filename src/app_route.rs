@@ -1,15 +1,15 @@
-use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::contract_calls::{
     get_all_contract_assets::get_all_contract_assets, get_asset::get_asset,
     get_my_assets::get_my_assets, register_asset::register_asset, transfer_asset::transfer_asset,
 };
 use crate::handlers::{
+    analytics::get_analytics,
     assets::get_all_assets,
     search::search_events,
     transfer::{get_assets_by_owner, get_transfers_by_asset, get_transfers_by_date},
-    analytics::get_analytics
 };
+use std::sync::Arc;
 
 use crate::swagger::ApiDoc;
 use axum::{

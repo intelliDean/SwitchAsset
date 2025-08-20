@@ -1,8 +1,8 @@
 use crate::app_state::AppState;
 use crate::models::{ApiResponse, Asset, SearchInput};
 use crate::schema::assets;
-use diesel::prelude::*;
 use diesel::ExpressionMethods;
+use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl};
 use std::sync::Arc;
 
@@ -45,12 +45,10 @@ pub async fn search_events(
         query = query.filter(assets::registered_at.le(end_date));
     }
 
-    let results = query
-        .load::<Asset>(conn)
-        .map_err(|e| {
-            eprintln!("Search query error: {:?}", e);
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let results = query.load::<Asset>(conn).map_err(|e| {
+        eprintln!("Search query error: {:?}", e);
+        axum::http::StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(axum::Json(ApiResponse { data: results }))
 }

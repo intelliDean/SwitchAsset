@@ -8,3 +8,12 @@ contract Errors {
     error ASSET_DOES_NOT_EXIST(bytes32 id);
     error INVALID_TRANSACTION();
 }
+
+
+
+
+
+
+
+
+

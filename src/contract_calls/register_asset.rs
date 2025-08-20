@@ -1,13 +1,10 @@
 use std::sync::Arc;
 // use crate::state::AppState;
-use crate::app_route::{AssetRegisteredFilter};
+use crate::app_route::AssetRegisteredFilter;
 use crate::app_state::AppState;
-use crate::models::{
-    Asset as DbAsset, AssetRegisteredResponse
-    , RegisterAssetInput,
-};
+use crate::models::{Asset as DbAsset, AssetRegisteredResponse, RegisterAssetInput};
 use crate::schema::assets;
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 use diesel::prelude::*;
 use ethabi::RawLog;
 use ethers::prelude::*;
@@ -29,9 +26,8 @@ pub async fn register_asset(
     State(state): State<Arc<AppState>>,
     Json(input): Json<RegisterAssetInput>,
 ) -> Result<Json<String>, StatusCode> {
-
     let contract = state.contract.clone();
-    
+
     let wallet_address = contract.client().address();
     let balance = contract
         .client()
@@ -41,8 +37,13 @@ pub async fn register_asset(
             eprintln!("Balance check error: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
-    eprintln!("Wallet address: 0x{:x}, Balance: {} wei (~{} ETH)", wallet_address, balance, balance.as_u128() as f64 / 1e18);
-    
+    eprintln!(
+        "Wallet address: 0x{:x}, Balance: {} wei (~{} ETH)",
+        wallet_address,
+        balance,
+        balance.as_u128() as f64 / 1e18
+    );
+
     let gas_estimate = contract
         .register_asset(input.description.clone())
         .estimate_gas()
@@ -53,18 +54,29 @@ pub async fn register_asset(
         })?;
     let gas_limit = gas_estimate * 120 / 100; // 120% buffer
 
-    eprintln!("Estimated gas: {}, Set gas limit: {}", gas_estimate, gas_limit);
-    
+    eprintln!(
+        "Estimated gas: {}, Set gas limit: {}",
+        gas_estimate, gas_limit
+    );
+
     let gas_price = contract
         .client()
         .get_gas_price()
         .await
         .unwrap_or(U256::from(2_000_000_000u64));
 
-    eprintln!("Gas price: {} wei ({} Gwei)", gas_price, gas_price.as_u64() as f64 / 1e9);
+    eprintln!(
+        "Gas price: {} wei ({} Gwei)",
+        gas_price,
+        gas_price.as_u64() as f64 / 1e9
+    );
 
     let required_funds: U256 = gas_limit * gas_price;
-    eprintln!("Required funds: {} wei (~{} ETH)", required_funds, required_funds.as_u128() as f64 / 1e18);
+    eprintln!(
+        "Required funds: {} wei (~{} ETH)",
+        required_funds,
+        required_funds.as_u128() as f64 / 1e18
+    );
 
     if balance < required_funds {
         eprintln!(
@@ -73,10 +85,10 @@ pub async fn register_asset(
         );
         return Err(StatusCode::BAD_REQUEST);
     }
-    
+
     let call = contract
         .register_asset(input.description.clone())
-        .gas(gas_limit) 
+        .gas(gas_limit)
         .gas_price(gas_price)
         .value(U256::zero());
     let tx = call
@@ -96,13 +108,13 @@ pub async fn register_asset(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    eprintln!("Transaction: {:?}", tx);
+    // eprintln!("Transaction: {:?}", tx);
 
     if tx.status != Some(1.into()) {
         eprintln!("Transaction failed: {:?}", tx);
         return Err(StatusCode::BAD_REQUEST);
     }
-    
+
     let mut event_res = AssetRegisteredResponse::init();
 
     for log in tx.logs.iter() {

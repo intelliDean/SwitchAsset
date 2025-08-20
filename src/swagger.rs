@@ -5,23 +5,18 @@ use crate::contract_calls::{
 };
 
 use crate::handlers::{
-        assets::__path_get_all_assets,
-        search::__path_search_events,
-        analytics::__path_get_analytics,
-        transfer::{
-        __path_get_assets_by_owner,
-        __path_get_transfers_by_asset,
-        __path_get_transfers_by_date
-    }
+    analytics::__path_get_analytics,
+    assets::__path_get_all_assets,
+    search::__path_search_events,
+    transfer::{
+        __path_get_assets_by_owner, __path_get_transfers_by_asset, __path_get_transfers_by_date,
+    },
 };
 use crate::models::{
-    ApiResponse, Asset, GetAssetInput, RegisterAssetInput, Transfer, TransferAssetInput,
-    OwnershipTransferredResponse,
-    SearchInput,
-    TransferByDate,
+    ApiResponse, Asset, GetAssetInput, OwnershipTransferredResponse, RegisterAssetInput,
+    SearchInput, Transfer, TransferAssetInput, TransferByDate,
 };
 use utoipa::OpenApi;
-
 
 #[derive(OpenApi)]
 #[openapi(

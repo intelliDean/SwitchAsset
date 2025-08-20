@@ -9,7 +9,9 @@ mod swagger;
 
 use crate::events::listen_for_events;
 
-use crate::app_route::{app_router};
+use crate::app_route::app_router;
+use crate::app_state::AppState;
+use crate::handlers::analytics::generate_analytics;
 use diesel::prelude::*;
 use diesel::prelude::*;
 use ethers::{
@@ -22,8 +24,6 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use utoipa::OpenApi;
-use crate::app_state::AppState;
-use crate::handlers::analytics::{generate_analytics};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -54,7 +54,6 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-
 
 // Part 2 – Backend & API Integration (DONE)
 // Build a backend application (Node.js or Python) that can:

@@ -1,6 +1,5 @@
 // @generated automatically by Diesel CLI.
 
-
 diesel::table! {
     assets (asset_id) {
         asset_id -> Text,
@@ -17,8 +16,10 @@ diesel::table! {
         old_owner -> Text,
         new_owner -> Text,
         timestamp -> Int8,
+        txn_hash -> Text,
     }
 }
 
 diesel::joinable!(transfers -> assets (asset_id));
 
+diesel::allow_tables_to_appear_in_same_query!(assets, transfers,);

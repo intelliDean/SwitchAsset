@@ -20,6 +20,7 @@ pub struct Transfer {
     pub old_owner: String,
     pub new_owner: String,
     pub timestamp: i64,
+    pub txn_hash: String,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -89,7 +90,6 @@ impl AssetRegisteredResponse {
         }
     }
 }
-
 
 #[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct SearchInput {

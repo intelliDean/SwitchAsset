@@ -1,11 +1,9 @@
-use std::sync::Arc;
 use crate::app_state::AppState;
-use crate::models::{
-    ApiResponse, Asset as DbAsset
-};
+use crate::models::{ApiResponse, Asset as DbAsset};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
+use std::sync::Arc;
 
 #[utoipa::path(
     get,

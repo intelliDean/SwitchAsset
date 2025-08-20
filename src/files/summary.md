@@ -1,9 +1,9 @@
 # SwitchAssets Analytics Summary
 ## Total Assets Registered
-7
+11
 ## Total Ownership Transfers
-5
+7
 ## Top 3 Most Active Owners
-- 0xc6fb3fe7c22220862a1b403e5fece8f13bcb61ce: 3 transfers
-- 0x_new_owner: 1 transfers
-- 0xf2e7e2f51d7c9eea9b0313c2eca12f8e43bd1855: 1 transfers
+- 0xF2E7E2f51D7C9eEa9B0313C2eCa12f8e43bd1855: 3 transfers
+- 0xc6fB3fe7C22220862A1b403e5FECE8F13bcB61CE: 1 transfers
+- 0xb99df9c70a4ba401ccc32deba43393905c80294c: 1 transfers

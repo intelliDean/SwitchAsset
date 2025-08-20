@@ -12,7 +12,6 @@ use eyre::Result;
 use std::sync::Arc;
 
 pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
-
     let contract = state.contract.clone();
     let client = contract.client();
 
@@ -22,10 +21,9 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
         eyre::eyre!("Failed to get latest block: {}", e)
     })?;
     let from_block = latest_block.saturating_sub(U64::from(1000));
-    //providers only allow 499-blocks per time
     let chunk_size = 499;
 
-    // so i rocess the historical events in chunks
+    // Process historical events in chunks
     let mut current_block = from_block;
     while current_block < latest_block {
         let to_block = (current_block + chunk_size).min(latest_block);
@@ -36,7 +34,7 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
             to_block - current_block + 1
         );
 
-        // event filters for the chunk
+        // Event filters for the chunk
         let asset_registered_filter = contract
             .event::<AssetRegisteredFilter>()
             .from_block(current_block)
@@ -47,16 +45,22 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
             .from_block(current_block)
             .to_block(to_block);
 
-        // fetch the historical events here
-        let asset_registered_logs = asset_registered_filter.query().await.map_err(|e| {
-            eprintln!(
-                "Failed to query AssetRegistered events for blocks {} to {}: {:?}",
-                current_block, to_block, e
-            );
-            eyre::eyre!("Failed to query AssetRegistered events: {}", e)
-        })?;
-        let ownership_transferred_logs =
-            ownership_transferred_filter.query().await.map_err(|e| {
+        // Fetch historical events with metadata
+        let asset_registered_logs =
+            asset_registered_filter
+                .query_with_meta()
+                .await
+                .map_err(|e| {
+                    eprintln!(
+                        "Failed to query AssetRegistered events for blocks {} to {}: {:?}",
+                        current_block, to_block, e
+                    );
+                    eyre::eyre!("Failed to query AssetRegistered events: {}", e)
+                })?;
+        let ownership_transferred_logs = ownership_transferred_filter
+            .query_with_meta()
+            .await
+            .map_err(|e| {
                 eprintln!(
                     "Failed to query OwnershipTransferred events for blocks {} to {}: {:?}",
                     current_block, to_block, e
@@ -64,19 +68,21 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
                 eyre::eyre!("Failed to query OwnershipTransferred events: {}", e)
             })?;
 
-        // to process the historical events
+        // Process historical events
         let conn = &mut state.db_pool.get().map_err(|e| {
             eprintln!("Failed to get DB connection: {:?}", e);
             eyre::eyre!("Failed to get DB connection: {}", e)
         })?;
-        for log in asset_registered_logs {
-            process_asset_registered_event(&contract, &log, conn).await?;
+        for (event, meta) in asset_registered_logs {
+            let txn_hash = Some(format!("0x{}", hex::encode(meta.transaction_hash)));
+            process_asset_registered_event(&contract, &event, conn, txn_hash).await?;
             if let Err(e) = generate_analytics(&state).await {
                 eprintln!("Analytics generation error for AssetRegistered: {:?}", e);
             }
         }
-        for log in ownership_transferred_logs {
-            process_ownership_transferred_event(&log, conn)?;
+        for (event, meta) in ownership_transferred_logs {
+            let txn_hash = Some(format!("0x{}", hex::encode(meta.transaction_hash)));
+            process_ownership_transferred_event(&event, conn, txn_hash)?;
             if let Err(e) = generate_analytics(&state).await {
                 eprintln!(
                     "Analytics generation error for OwnershipTransferred: {:?}",
@@ -88,32 +94,34 @@ pub async fn listen_for_events(state: Arc<AppState>) -> Result<()> {
         current_block = to_block + 1;
     }
 
-    // after the historical evets are processed and saved, we stream future events
+    // Stream future events
     eprintln!("Starting event stream from block {}", latest_block + 1);
     let events = contract.events().from_block(latest_block + 1);
-    let mut stream = events.stream().await.map_err(|e| {
+    let mut stream = events.stream_with_meta().await.map_err(|e| {
         eprintln!("Failed to create event stream: {:?}", e);
         eyre::eyre!("Failed to create event stream: {}", e)
     })?;
 
     loop {
         match stream.next().await {
-            Some(Ok(SwitchAssetsEvents::AssetRegisteredFilter(event))) => {
+            Some(Ok((SwitchAssetsEvents::AssetRegisteredFilter(event), meta))) => {
+                let txn_hash = Some(format!("0x{}", hex::encode(meta.transaction_hash)));
                 let conn = &mut state.db_pool.get().map_err(|e| {
                     eprintln!("Failed to get DB connection: {:?}", e);
                     eyre::eyre!("Failed to get DB connection: {}", e)
                 })?;
-                process_asset_registered_event(&contract, &event, conn).await?;
+                process_asset_registered_event(&contract, &event, conn, txn_hash).await?;
                 if let Err(e) = generate_analytics(&state).await {
                     eprintln!("Analytics generation error for AssetRegistered: {:?}", e);
                 }
             }
-            Some(Ok(SwitchAssetsEvents::OwnershipTransferredFilter(event))) => {
+            Some(Ok((SwitchAssetsEvents::OwnershipTransferredFilter(event), meta))) => {
+                let txn_hash = Some(format!("0x{}", hex::encode(meta.transaction_hash)));
                 let conn = &mut state.db_pool.get().map_err(|e| {
                     eprintln!("Failed to get DB connection: {:?}", e);
                     eyre::eyre!("Failed to get DB connection: {}", e)
                 })?;
-                process_ownership_transferred_event(&event, conn)?;
+                process_ownership_transferred_event(&event, conn, txn_hash)?;
                 if let Err(e) = generate_analytics(&state).await {
                     eprintln!(
                         "Analytics generation error for OwnershipTransferred: {:?}",
@@ -139,6 +147,7 @@ async fn process_asset_registered_event(
     contract: &SwitchAssets<SignerMiddleware<Provider<Http>, Wallet<SigningKey<Secp256k1>>>>,
     event: &AssetRegisteredFilter,
     conn: &mut PgConnection,
+    txn_hash: Option<String>,
 ) -> Result<()> {
     let asset_id = format!("0x{}", hex::encode(event.asset_id));
     let owner = to_checksum(&event.asset_owner, None);
@@ -160,7 +169,29 @@ async fn process_asset_registered_event(
     let description = asset.2;
     let registered_at = asset.3.as_u64() as i64;
 
-    // you either insert or update the asset table
+    // Check if asset exists with this txn_hash
+    if let Some(ref txn) = txn_hash {
+        let exists: bool = assets::table
+            .filter(assets::asset_id.eq(&asset_id))
+            // .filter(assets::txn_hash.eq(txn))
+            .select(diesel::dsl::count_star())
+            .first::<i64>(conn)
+            .map(|count| count > 0)
+            .map_err(|e| {
+                eprintln!("Failed to check existing asset {}: {:?}", asset_id, e);
+                eyre::eyre!("Failed to check existing asset: {}", e)
+            })?;
+
+        if exists {
+            eprintln!(
+                "Skipping duplicate asset registration for {} (tx: {})",
+                asset_id, txn
+            );
+            return Ok(());
+        }
+    }
+
+    // Insert or update the asset table
     let db_asset = (
         assets::asset_id.eq(&asset_id),
         assets::owner.eq(&owner),
@@ -178,28 +209,54 @@ async fn process_asset_registered_event(
             eyre::eyre!("Failed to insert/update asset: {}", e)
         })?;
 
-    eprintln!("📦 Asset Registered: ID = {}, Owner = {}", asset_id, owner);
     Ok(())
 }
 
 fn process_ownership_transferred_event(
     event: &OwnershipTransferredFilter,
     conn: &mut PgConnection,
+    txn_hash: Option<String>,
 ) -> Result<()> {
     let asset_id = format!("0x{}", hex::encode(event.asset_id));
     let old_owner = to_checksum(&event.old_owner, None);
     let new_owner = to_checksum(&event.new_owner, None);
     let timestamp = Utc::now().timestamp();
 
-    // use transaction to update both transfers and assets
+    // Check if transfer exists
+    if let Some(ref txn) = txn_hash {
+        let exists: bool = transfers::table
+            .filter(transfers::asset_id.eq(&asset_id))
+            .filter(transfers::txn_hash.eq(txn))
+            .select(diesel::dsl::count_star())
+            .first::<i64>(conn)
+            .map(|count| count > 0)
+            .map_err(|e| {
+                eprintln!(
+                    "Failed to check existing transfer for {}: {:?}",
+                    asset_id, e
+                );
+                eyre::eyre!("Failed to check existing transfer: {}", e)
+            })?;
+
+        if exists {
+            eprintln!(
+                "Skipping duplicate transfer for asset {} (tx: {})",
+                asset_id, txn
+            );
+            return Ok(());
+        }
+    }
+
+    // Use transaction to update both transfers and assets
     conn.transaction(|conn| {
-        // save transfer record
+        // Save transfer record
         diesel::insert_into(transfers::table)
             .values((
                 transfers::asset_id.eq(&asset_id),
                 transfers::old_owner.eq(&old_owner),
                 transfers::new_owner.eq(&new_owner),
                 transfers::timestamp.eq(timestamp),
+                transfers::txn_hash.eq(&txn_hash.unwrap()),
             ))
             .execute(conn)
             .map_err(|e| {
@@ -207,7 +264,7 @@ fn process_ownership_transferred_event(
                 eyre::eyre!("Failed to insert transfer: {}", e)
             })?;
 
-        // update asset owner
+        // Update asset owner
         diesel::update(assets::table)
             .filter(assets::asset_id.eq(&asset_id))
             .set(assets::owner.eq(&new_owner))
@@ -224,12 +281,10 @@ fn process_ownership_transferred_event(
         eyre::eyre!("Transaction failed: {}", e)
     })?;
 
-    eprintln!(
-        "🔄 Ownership Transferred: Asset ID = {}, Old Owner = {}, New Owner = {}",
-        asset_id, old_owner, new_owner
-    );
     Ok(())
 }
+
+//==
 
 // Part 3 – Data Query, Analysis & Visualization (DONE)
 // • Query all blockchain events related to your deployed contract for the last 1,000 blocks
