@@ -319,3 +319,6 @@ cat analytics.json
 psql -d switch_assets -c "INSERT INTO transfers (asset_id, old_owner, new_owner, timestamp) SELECT '0x' || generate_series(1, 500), '0x_old_owner', '0x_new_owner', 1695062400;"
 time curl http://127.0.0.1:8080/transfers/0x1
 ```
+
+## License
+MIT License. See LICENSE file for details.
