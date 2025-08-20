@@ -25,7 +25,6 @@ use ethers::prelude::*;
     ),
     tag = "SwitchAssets"
 )]
-// Call transferAsset and save OwnershipTransferred event to DB
 pub async fn transfer_asset(
     State(state): State<Arc<AppState>>,
     Json(input): Json<TransferAssetInput>,
@@ -54,7 +53,7 @@ pub async fn transfer_asset(
         .send()
         .await
         .map_err(|e| {
-            // eprintln!("Transaction send error: {:?}", e);
+            eprintln!("Transaction send error: {:?}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?
         .await

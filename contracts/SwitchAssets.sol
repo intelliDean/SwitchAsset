@@ -133,18 +133,19 @@ contract SwitchAssets {
 }
 
 // Part 1 – Smart Contract Development (DONE ✅)
-// Develop and deploy an Ethereum-based smart contract (Solidity) that implements a basic asset registry. Each asset should have:
-// • Asset ID (unique)
-// • Owner address
-// • Description
-// • Registration timestamp
+// Develop and deploy an Ethereum-based smart contract (Solidity) that implements a basic asset registry.
+// Each asset should have:
+//  • Asset ID (unique)
+//  • Owner address
+//  • Description
+//  • Registration timestamp
 
 // Requirements: 
-// • Ability to register a new asset ✅
-// • Ability to transfer ownership ✅
-// • Event emission for both registration and transfer ✅
-// • Write at least 5 unit tests using Foundry ✅
+//  • Ability to register a new asset ✅
+//  • Ability to transfer ownership ✅
+//  • Event emission for both registration and transfer ✅
+//  • Write at least 5 unit tests using Foundry ✅
 
 
-// SwitchAssets Contract Address: 0xb91f90fc5c8125226486417db014eaa21f7b27a0;
-// https://sepolia.basescan.org/address/0xb91f90fc5c8125226486417db014eaa21f7b27a0#code
+// SwitchAssets Contract Address: 0x3897196da6a4f2219ED4F183AFA3A10C8C227f23;
+// https://sepolia.basescan.org/address/0x3897196da6a4f2219ED4F183AFA3A10C8C227f23#code

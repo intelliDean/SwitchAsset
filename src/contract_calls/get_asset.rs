@@ -1,5 +1,3 @@
-// use crate::state::AppState;
-
 use std::sync::Arc;
 use crate::app_state::AppState;
 use crate::models::{ApiResponse, Asset as DbAsset, GetAssetInput};

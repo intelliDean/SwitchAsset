@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    // 2 factor auth
+    // 2-factor auth... lol
     if let Err(e) = generate_analytics(&state).await {
         eprintln!("Analytics generation error: {:?}", e);
     }

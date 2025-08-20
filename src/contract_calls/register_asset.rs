@@ -31,8 +31,7 @@ pub async fn register_asset(
 ) -> Result<Json<String>, StatusCode> {
 
     let contract = state.contract.clone();
-
-    // Check wallet balance
+    
     let wallet_address = contract.client().address();
     let balance = contract
         .client()
@@ -43,8 +42,7 @@ pub async fn register_asset(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
     eprintln!("Wallet address: 0x{:x}, Balance: {} wei (~{} ETH)", wallet_address, balance, balance.as_u128() as f64 / 1e18);
-
-    // Estimate gas
+    
     let gas_estimate = contract
         .register_asset(input.description.clone())
         .estimate_gas()
@@ -56,8 +54,7 @@ pub async fn register_asset(
     let gas_limit = gas_estimate * 120 / 100; // 120% buffer
 
     eprintln!("Estimated gas: {}, Set gas limit: {}", gas_estimate, gas_limit);
-
-    // Set gas price (fallback to 2 Gwei if network fetch fails)
+    
     let gas_price = contract
         .client()
         .get_gas_price()
@@ -66,7 +63,6 @@ pub async fn register_asset(
 
     eprintln!("Gas price: {} wei ({} Gwei)", gas_price, gas_price.as_u64() as f64 / 1e9);
 
-    // Calculate required funds
     let required_funds: U256 = gas_limit * gas_price;
     eprintln!("Required funds: {} wei (~{} ETH)", required_funds, required_funds.as_u128() as f64 / 1e18);
 
@@ -77,11 +73,10 @@ pub async fn register_asset(
         );
         return Err(StatusCode::BAD_REQUEST);
     }
-
-    // Send transaction
+    
     let call = contract
         .register_asset(input.description.clone())
-        .gas(gas_limit) //
+        .gas(gas_limit) 
         .gas_price(gas_price)
         .value(U256::zero());
     let tx = call
@@ -107,8 +102,7 @@ pub async fn register_asset(
         eprintln!("Transaction failed: {:?}", tx);
         return Err(StatusCode::BAD_REQUEST);
     }
-
-
+    
     let mut event_res = AssetRegisteredResponse::init();
 
     for log in tx.logs.iter() {

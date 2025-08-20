@@ -12,5 +12,6 @@ interface ISwitch {
     }
 
     event AssetRegistered(bytes32 indexed assetId, address indexed assetOwner);
+
     event OwnershipTransferred(bytes32 indexed assetId, address indexed oldOwner, address indexed newOwner);
 }

@@ -35,14 +35,12 @@ pub async fn get_analytics() -> Result<Json<Analytics>, axum::http::StatusCode> 
 
 pub async fn generate_analytics(state: &AppState) -> Result<()> {
     let conn = &mut state.db_pool.get()?;
-
-    // Total assets registered
+    
     let total_assets: i64 = assets::table.count().get_result(conn)?;
-
-    // Total ownership transfers
+    
     let total_transfers: i64 = transfers::table.count().get_result(conn)?;
-
-    // Top 3 most active owners by number of transfers
+    
+    //this is to get the top 3 owners
     let top_owners = transfers::table
         .select((
             transfers::new_owner,
@@ -56,14 +54,14 @@ pub async fn generate_analytics(state: &AppState) -> Result<()> {
         .map(|(owner, transfer_count)| TopOwner { owner, transfer_count })
         .collect::<Vec<_>>();
 
-    // Create analytics struct
+    // to create analytics struct
     let analytics = Analytics {
         total_assets,
         total_transfers,
         top_owners,
     };
 
-    // Export to JSON
+    // turn it to JSON
     let json_data = json!({
         "total_assets": analytics.total_assets,
         "total_transfers": analytics.total_transfers,
@@ -73,7 +71,7 @@ pub async fn generate_analytics(state: &AppState) -> Result<()> {
     serde_json::to_writer_pretty(&mut json_file, &json_data)?;
     json_file.flush()?;
 
-    // Export to Markdown
+    // create markdown version
     let mut md_file = File::create("src/files/summary.md")?;
     writeln!(md_file, "# SwitchAssets Analytics Summary")?;
     writeln!(md_file, "## Total Assets Registered")?;

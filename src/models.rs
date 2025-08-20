@@ -1,7 +1,3 @@
-use crate::app_state::AppState;
-use axum::Json;
-use axum::extract::State;
-use axum::http::StatusCode;
 use diesel::{AsChangeset, Insertable, Queryable};
 use ethabi::ethereum_types::{H160, H256};
 use serde::{Deserialize, Serialize};
@@ -72,7 +68,6 @@ pub struct GetAssetInput {
     pub asset_id: String,
 }
 
-// Structs for event responses
 #[derive(Clone, Debug)]
 pub struct AssetRegisteredResponse {
     pub asset_id: H256,
@@ -122,10 +117,3 @@ pub struct Analytics {
     pub total_transfers: i64,
     pub top_owners: Vec<TopOwner>,
 }
-
-// #[derive(Serialize, Deserialize, Debug, ToSchema)]
-// pub struct Analytics {
-//     pub total_assets: i64,
-//     pub total_transfers: i64,
-//     pub top_owners: Vec<(String, i64)>,
-// }

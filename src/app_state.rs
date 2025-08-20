@@ -20,6 +20,7 @@ impl AppState {
     pub async fn init() -> eyre::Result<AppState, Report> {
         dotenv().ok();
 
+        //db connection
         let db_url = env::var("DATABASE_URL")?;
         let manager = ConnectionManager::<PgConnection>::new(db_url);
         let pool = Pool::builder()
@@ -27,9 +28,9 @@ impl AppState {
             .build(manager)
             .map_err(|e| eyre::eyre!("Failed to create pool: {}", e))?;
 
+        //contract connection
         let rpc_url = env::var("BASE_URL")?;
         let private_key = env::var("PRIVATE_KEY")?;
-
         let switch_address: Address = env::var("CONTRACT_ADDRESS")?
             .parse()
             .map_err(|_| anyhow::anyhow!("Invalid contract address"))

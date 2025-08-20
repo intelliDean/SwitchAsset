@@ -9,15 +9,14 @@ use crate::handlers::{
         search::__path_search_events,
         analytics::__path_get_analytics,
         transfer::{
-        __path_get_assets_by_owner, 
-        __path_get_transfers_by_asset, 
+        __path_get_assets_by_owner,
+        __path_get_transfers_by_asset,
         __path_get_transfers_by_date
     }
 };
 use crate::models::{
     ApiResponse, Asset, GetAssetInput, RegisterAssetInput, Transfer, TransferAssetInput,
     OwnershipTransferredResponse,
-    AssetRegisteredResponse,
     SearchInput,
     TransferByDate,
 };
@@ -41,16 +40,15 @@ use utoipa::OpenApi;
     ),
     components(
         schemas(
-            Asset, 
-            Transfer, 
-            ApiResponse<Vec<Asset>>, 
+            Asset,
+            Transfer,
+            ApiResponse<Vec<Asset>>,
             ApiResponse<Vec<Transfer>>,
-            RegisterAssetInput, 
-            GetAssetInput, 
-            TransferAssetInput, 
+            RegisterAssetInput,
+            GetAssetInput,
+            TransferAssetInput,
             ApiResponse<Asset>,
             OwnershipTransferredResponse,
-            // AssetRegisteredResponse,
             SearchInput,
             TransferByDate
         )

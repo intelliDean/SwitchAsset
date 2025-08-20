@@ -28,6 +28,7 @@ pub async fn search_events(
 
     let mut query = assets::table.into_boxed();
 
+    //anyone you use will be used for the search
     if let Some(asset_id) = input.asset_id {
         query = query.filter(assets::asset_id.eq(asset_id));
     }
